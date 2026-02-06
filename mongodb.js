@@ -1,5 +1,5 @@
 const mongoose=require("mongoose")
-mongoose.connect("mongodb://localhost:27017/csmd")
+mongoose.connect("mongodb://localhost:27017/kavya")
 .then(()=>{
     console.log("Mongo db connected")
 })
@@ -12,5 +12,6 @@ const LoginSchema=new mongoose.Schema({
     password:String,
 })
 
-const collection=new mongoose.model("kavya",LoginSchema)
+const collection=new mongoose.model("csmd",LoginSchema)
 module.exports=collection
+
