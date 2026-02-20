@@ -1,81 +1,84 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta charset='utf-8'>
-    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+  <head>
     <title>Login Page</title>
-    <meta name='viewport' content='width=device-width, initial-scale=1'>
-    <style>
-        fieldset {
-            left: 35%;
-            position: absolute;
-            height: auto; /* Changed to auto to fit new fields */
-            width: 30%;
-            padding: 20px;
-            background-color: burlywood;
-            text-align: center;
-        }
-        table {
-            margin: 0 auto;
-        }
-        td {
-            padding: 5px;
-        }
-        legend {
-            border: solid;
-            background-color: white;
-            padding: 0 10px;
-        }
-    </style>
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-    function fv1() {
-        var un1 = document.lf.un.value;
-        var pass1 = document.lf.pass.value;
-        var cpass1 = document.lf.cpass.value;
+        const form=$("#loginForm");
+        $(document).ready(function() {
+            $("#loginForm").submit((event)=>{
+                event.preventDefault();
+                var name = $("#username").val();
+                var password=$("#pwd").val();
+                //generateToken by making a service call to /auth with post
+                $.ajax({
+                url:"/auth",
+                type:"POST",
+                contentType:"application/json",
+                dataType:"json",
+                data: JSON.stringify({
+                name: name,
+                password: password}),
+                success: function(data) {
+                    var tokenData=data;
+                    if(tokenData.login==true){
+                        localStorage.setItem("username",tokenData.data.name);
+                        localStorage.setItem("job",tokenData.data.work);
+                        if(verifyLogin(tokenData.token))
+                        {
+                            alert("JWT Token: "+tokenData.token);
+                            window.location.href="/welcome";
+                        }
+                        else{
+                            alert("Authentication Failed");
+                        }
+                    }
+                },
+                error: function(data ){
+                    console.log("Something went wrong");
+                }
+                });
+            });
+        });
 
-        // Name length validation
-        if (un1.length < 3) {
-            alert("Name must be at least 3 characters");
-            return false;
+    function verifyLogin(token)
+    {
+        let result=true;
+        //verifyToken by making a service call to /verifyToken with get
+        $.ajax({
+        url:"/verifyToken",
+        type:"POST",
+        contentType:"application/json",
+        dataType:"json",
+        data: JSON.stringify({
+        token: token}),
+        success: function(data) {
+            if(data.login==true)
+            {     
+                result=true;
+            }
+            else
+            {
+                result=false;
+            }
+        },
+        error: function(data ){
+            console.log("Wrong Token, Not Authenticated.");
         }
-        
-        // Password match validation
-        if (pass1 != cpass1) {
-            alert("Passwords do not match");
-            return false;
-        }
-        
-        return true;
+        });
+        return result;
     }
-    </script>
-</head>
+  </script>
 <body>
-    <fieldset>
-        <legend>Login</legend>
-        <form action="week4.html" name="lf" onsubmit="return fv1()">
-            <table>
-                <tr>
-                    <td><label>Name</label></td>
-                    <td><input type="text" name="un" required></td>
-                </tr>
-                <tr>
-                    <td><label>Email</label></td>
-                    <td><input type="email" name="email" required></td>
-                </tr>
-                <tr>
-                    <td><label>Password</label></td>
-                    <td><input type="password" name="pass" required></td>
-                </tr>
-                <tr>
-                    <td><label>Confirm Password</label></td>
-                    <td><input type="password" name="cpass" required></td>
-                </tr>
-                <tr>
-                    <td><input type="submit" value="Login"></td>
-                    <td><input type="reset" name="reset"></td>
-                </tr>
-            </table>
+    <center>
+        <h2>Sign In</h2>
+        <form id="loginForm">
+            <label for="username">Username:</label><br>
+            <input type="text" id="username" name="username"><br>
+            <label for="pwd">Password:</label><br>
+            <input type="password" id="pwd" name="pwd"><br><br>
+            <input type="submit" value="Submit">
         </form>
-    </fieldset>
+    </center>
 </body>
 </html>
