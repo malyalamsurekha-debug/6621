@@ -1,9 +1,7 @@
 // Import express for creating API's endpoints
 const express = require("express");
-const path = require('path');
-const fs = require("fs");
-const users = require("./database.json");
-var database;
+const db = require("./database.js");
+const {MongoClient} =require('mongodb');
 var token;
 
 // Import jwt for API's endpoints authentication
@@ -37,7 +35,7 @@ app.get('/login',
     });
 
 // SignUp route
-app.post("/register", (req, res) => {
+app.post("/register", async(req, res) => {
 	// Get the name to the json body data
 	const name = req.body.name;
 
@@ -46,80 +44,39 @@ app.post("/register", (req, res) => {
 
 	// Get the profession to the json body data
 	const work = req.body.work;
-	
-	// Make two variable for further use
-	let isPresent = false;
-	let isPresentIndex = null;
-
-    // Read database.json file 
-    fs.readFile("database.json", function(err, data) { 
-    
-        // Check for errors 
-        if (err) throw err; 
-
-        // Converting to JSON 
-        database = JSON.parse(data); 
-
-	// iterate a loop to the data items and
-	// check what data are matched.
-	for (let i = 0; i < database.length; i++) {
-
-		// If data name are matched so check
-		// the password are correct or not
-		if (database[i].name === name
-			&& database[i].password === password) {
-
-			// If both are correct so make 
-			// isPresent variable true
-			isPresent = true;
-
-			// And store the data index
-			isPresentIndex = i;
-
-			// Break the loop after matching successfully
-			break;
-		}
-	}
-
-	// If isPresent is true, then create a
-	// token and pass to the response
-	if (isPresent) {
+	tuple= await db.getData(name,password);
+		if(JSON.parse(tuple).length>0){
 		res.json({
 			signup: false,
 			token: null,
 			error: "Already registered",
 		});
 	} else {
-		let user =
+
+		// The jwt.sign method are used
+		// to create token
+		const token = jwt.sign(tuple, "secret");
+
+	let emp =
 	{
     	name: name,
     	work: work,
     	password: password,
-		token: token
+		token:token
 	};
-	users.push(user);
-		fs.writeFile(
-			"database.json",
-			JSON.stringify(users),
-			err => {
-				// Checking for errors 
-				if (err) throw err;
-		
-				// Success 
-				res.json({
-					signup: true,
-					token: "generated",
-					data: "Successfully Registered",
-				});
-				console.log("Done writing");
-			}); 
+
+	let result=await db.insertData(emp);
+	res.json({
+		signup: true,
+		token: "generated",
+		result:result
+	});
 	}
 });
-}); 
 
 
 // Login route
-app.post("/auth", (req, res) => {
+app.post("/auth", async (req, res) => {
 	// Get the name to the json body data
 	
 	const name = req.body.name;
@@ -128,64 +85,28 @@ app.post("/auth", (req, res) => {
 	// Get the password to the json body data
 	const password = req.body.password;
 	console.log(password)
-	// Make two variable for further use
-	let isPresent = false;
-	let isPresentIndex = null;
 
-    // Read database.json file 
-    fs.readFile("database.json", function(err, data) { 
-    
-        // Check for errors 
-        if (err) throw err; 
+	tuple=await db.getData(name,password);
 
-        // Converting to JSON 
-        database = JSON.parse(data); 
-
-	// iterate a loop to the data items and
-	// check what data are matched.
-	for (let i = 0; i < database.length; i++) {
-
-		// If data name are matched so check
-		// the password are correct or not
-		if (database[i].name === name
-			&& database[i].password === password) {
-
-			// If both are correct so make 
-			// isPresent variable true
-			isPresent = true;
-
-			// And store the data index
-			isPresentIndex = i;
-
-			// Break the loop after matching successfully
-			break;
-		}
-	}
-
-	// If isPresent is true, then create a
-	// token and pass to the response
-	if (isPresent) {
+	if (JSON.parse(tuple).length>0) {
 
 		// The jwt.sign method are used
 		// to create token
-		const token = jwt.sign(database[isPresentIndex], "secret");
+		const token = jwt.sign(tuple, "secret");
 
 		// Pass the data or token in response
 		res.json({
 			login: true,
 			token: token,
-			data: database[isPresentIndex],
+			data: JSON.parse(tuple),
 		});
 	} else {
-
-		// If isPresent is false return the error
 		res.json({
 			login: false,
 			error: "please check name and password.",
 		});
 	}
 });
-}); 
 
 // Verify route
 app.post("/verifyToken", (req, res) => {
@@ -229,3 +150,4 @@ app.listen(port, () => {
 	console.log(`Server is running : 
 	http://localhost:${port}/`);
 });
+
